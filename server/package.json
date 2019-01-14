@@ -1,0 +1,23 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "./node_modules/nodemon/bin/nodemon.js src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "L7": "^0.2.3",
+    "bunyan": "^1.8.12",
+    "cors": "^2.8.5",
+    "express": "^4.16.4",
+    "iconv-lite": "^0.4.24",
+    "mongoose": "^5.4.3",
+    "multer": "^1.4.1",
+    "nodemon": "^1.18.9"
+  }
+}
