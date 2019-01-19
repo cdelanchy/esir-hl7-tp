@@ -11,7 +11,7 @@ export default {
 
   sendFile (formData) {
     console.log(formData)
-    return Api().post('/single-file',
+    return Api().post('/upload',
       formData, {
         headers: {
           'Content-Type': 'multipart/form-data'

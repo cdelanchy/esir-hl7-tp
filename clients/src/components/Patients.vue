@@ -46,6 +46,7 @@
 
 <script>
 import PostsService from '@/services/PostsService'
+
 export default {
   name: 'patients',
   data () {
@@ -55,6 +56,9 @@ export default {
   },
   mounted () {
     this.getPatients()
+    this.$socket.on('refresh', (data) => {
+      this.getPatients()
+    });
   },
   methods: {
     async getPatients () {
