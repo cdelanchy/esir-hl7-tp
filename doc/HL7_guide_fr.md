@@ -116,9 +116,11 @@ ZBE|12823281^HMLIT|20151226083028||INSERT|N||MATER^^^^^HMLIT^UF^^^MATER|MATER^^^
 ZFM|8||||
 ```
 
-## Ressources
+## Ressources et outils
 
 Pour vous aider, vous pouvez vous aider des ressources suivantes :
 
 * [documentation officielle d'HL7 v2.5](http://www.hl7.org/implement/standards/product_brief.cfm?product_id=143) (le chapitre 3 correspond aux messages ADT), attention, un compte est nécessaire pour télécharger le standard
 * [le site Caristix]() qui décrit de façon plus interactive les différents segments et messages HL7 ADT
+* l'extension [HL7Tools](https://marketplace.visualstudio.com/items?itemName=RobHolme.hl7tools) pour [Visual Studio Code](https://code.visualstudio.com/) peut être utile, notamment son découpage du message en segments et champs
+* la plateforme de tests d'interopérabilité de l'Agence du Numérique en Santé dispose [d'un générateur de message HL7](https://interop.esante.gouv.fr/PatientManager/home.seam) qui peut être utile
