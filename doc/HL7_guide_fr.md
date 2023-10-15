@@ -4,7 +4,7 @@
 
 L'interopérabilité permet à des équipements de communiquer entre eux et de s'échanger des données dans un langage commun, idéalement en suivant des standards. Dans le domaine de la santé, de nombreux équipements différents sont opérationnels dans les établissements de soin, de nature à la fois matérielle et logicielle. Nous pouvons citer par exemple les dossiers patients informatisés (DPI), les modalités d'imagerie et d'examens (IRM, Scanner, TEP...), le logiciel de suivi de bloc, la pharmacie, etc.
 
-L'ensemble de ces équipements doit s'échanger de l'information afin de garder une cohérence du système d'informations de l'établissement de soin. Cela permet que l'ajout d'un rendez-vous pour un examen d'imagerie pour un patient A soit enregistré au sein de la modalité et que cette dernière enregistre directement les images de l'examen avec les données relatives au patient A. Cela évite une deuxième saison des informations du patient A sur la modalité, donc des risques d'erreur et permet de garder les informations à jour. En effet, si une information importante concernant le patient A est modifiée dans un équipement, cette mise à jour est aussi indiquée aux autres systèmes.
+L'ensemble de ces équipements doit s'échanger de l'information afin de garder une cohérence du système d'informations de l'établissement de soin. Cela permet que l'ajout d'un rendez-vous pour un examen d'imagerie pour un patient A soit enregistré au sein de la modalité et que cette dernière enregistre directement les images de l'examen avec les données relatives au patient A. Cela évite une deuxième saisie des informations du patient A sur la modalité, donc des risques d'erreur, et permet de garder les informations à jour. En effet, si une information importante concernant le patient A est modifiée dans un équipement, cette mise à jour est aussi indiquée aux autres systèmes.
 
 L'interopérabilité est donc primordiale en santé, et ne doit pas être confondue avec l'interconnexion.
 
@@ -52,15 +52,15 @@ Nous pouvons citer en segments d'intérêts, en plus de MSH :
 
 ## L'identification patient
 
-L'identification patient est un facteur important dans le système d'information hospitalier. En effet, il faut pouvoir reconnaître un même patient à travers les différents équipements et logiciels au sein de l'établissement et - idéalement - entre établissement.
+L'identification patient est un facteur important dans le système d'information hospitalier. En effet, il faut pouvoir reconnaître un même patient à travers les différents équipements et logiciels au sein de l'établissement et - idéalement - entre établissements.
 
-Au vu des problèmes d'homonymie et de probabilité d'avoir des dates de naissance, le trio nom/prénom/date de naisse n'est évidement pas l'identifiant du patient au sein du SIH.
+Au vu des problèmes d'homonymie et de probabilité d'avoir des dates de naissance identique, le trio nom/prénom/date de naissance n'est évidement pas l'identifiant du patient au sein du SIH.
 
-Pour se faire, on attribue au patient un ou plusieurs IPP (identifiant patient unique). Ces IPP sont générés par des logiciels garant de l'authentification patient et considéré comme identifiant de confiance par les autres logiciels.
+Pour ce faire, on attribue au patient un ou plusieurs IPP (identifiant patient unique). Ces IPP sont générés par des logiciels garants de l'authentification patient et considérés comme identifiant de confiance par les autres logiciels.
 
 Les IPP sont donc la référence d'identifiant patient sur lesquelles se basent l'ensemble des dispositifs communiquant avec le SIH.
 
-Ces IPP sont composé d'un identifiant unique et de la référence de l'entité émettrice de cet identifiant. Par exemple : `1111^^^HMLIT^PI` indique que l'identifiant du patient est 1111 et il a été généré par Hopital Manager (module LIT).
+Ces IPP sont composés d'un identifiant unique et de la référence de l'entité émettrice de cet identifiant. Par exemple : `1111^^^HMLIT^PI` indique que l'identifiant du patient est 1111 et il a été généré par Hopital Manager (module LIT).
 
 ## Message d'admission : ADT_A01
 
@@ -87,9 +87,9 @@ On peut également y trouver son sexe, son adresse, numéro de téléphone et au
 
 Le type du message dans le header est bien A01, pour une admission.
 
-## Message de transfert : ADT_A02
+## Message de transfert :
 
-Un transfert de patient correspond à un changement de chambre ou de service d'un patient durant son parcours. Le message correspondant est de type A02. Il comporte notamment l'ancienne localisation du patient et son nouvel emplacement.
+Un transfert de patient correspond à un changement de chambre ou de service d'un patient durant son parcours. Il comporte notamment l'ancienne localisation du patient et son nouvel emplacement.
 
 Voici un exemple présentant le transfert du patient Patient112 PATIENT112 (nom de naissance), née le 13/10/1903, de la chambre 170 de la maternité à la chambre 174 du même service.
 
@@ -103,24 +103,15 @@ ZFM|8||||
 ROL|12823254^HMLIT|UP|AT|RVAL4^ROS ^Valerian^^^^^^HMLIT^^^^EI~221000000^ROS ^Valerian^^^^^^HMLIT^^^^ADELI|20151126083028|
 ```
 
-## Message de sortie : ADT_A03
+## Message de sortie :
 
-Le message de sortie est géré par le type A03. Ici, il s'agit d'une sortie du patient Patient001 qui a eu lieu le 26/12/2015 à 08h30.
-
-```text
-MSH|^~\&|HMLIT|HMLIT|TELECOMSANTEPLI|TELECOMSANTEPLI|20140415154239||ADT^A03^ADT_A03|13444281|P|2.5|||||FRA|8859/1|FR||
-EVN||20151226083028||||20151226083028|
-PID|1||68167^^^SIGEMS^PI||PATIENT001^Patient001^^^MME^^L||19791013|F|||Updated Street^^HOMETOWN^^22000^100^H||06.42.35.35.22^PRN^PH^^^^^^^^^0642353522|||||354116574^^^HMLIT^AN|279121403514454||||||1|||||N|||||||||
-PV1|1|I|MATER^170^170^220000301||||RVAL4^ROS ^Valerian^^^^^^HMLIT^^^^EI~221000300^ROS ^Valerian^^^^^^HMLIT^^^^ADELI|||165|||||||||314006574^^^HMLIT||03|Y||||||||||||||||||||||20140502040000|||||||A|
-ZBE|12823281^HMLIT|20151226083028||INSERT|N||MATER^^^^^HMLIT^UF^^^MATER|MATER^^^^^HMLIT^UF^^^MATER|
-ZFM|8||||
-```
+Ce message permet d'indiquer la sortie d'un patient de l'établissement.
 
 ## Ressources et outils
 
 Pour vous aider, vous pouvez vous aider des ressources suivantes :
 
 * [documentation officielle d'HL7 v2.5](http://www.hl7.org/implement/standards/product_brief.cfm?product_id=143) (le chapitre 3 correspond aux messages ADT), attention, un compte est nécessaire pour télécharger le standard
-* [le site Caristix]() qui décrit de façon plus interactive les différents segments et messages HL7 ADT
+* [le site Caristix](https://hl7-definition.caristix.com/v2/) qui décrit de façon plus interactive les différents segments et messages HL7 ADT
 * l'extension [HL7Tools](https://marketplace.visualstudio.com/items?itemName=RobHolme.hl7tools) pour [Visual Studio Code](https://code.visualstudio.com/) peut être utile, notamment son découpage du message en segments et champs
-* la plateforme de tests d'interopérabilité de l'Agence du Numérique en Santé dispose [d'un générateur de message HL7](https://interop.esante.gouv.fr/PatientManager/home.seam) qui peut être utile
+* la plateforme de tests d'interopérabilité de l'Agence du Numérique en Santé dispose [d'un générateur de message HL7](https://interop.esante.gouv.fr/PatientManager/home.seam) qui peut être utile pour vous générez des templates. **ATTENTION : ne jamais utiliser de DONNEES REELLES sur les plateformes de test.**

@@ -1,10 +1,10 @@
-# ESRH TP HL7 [![licence](https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png)](http://creativecommons.org/licenses/by-nc-sa/4.0/)
+# ESI TP HL7 [![licence](https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png)](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-This project contains the ESRH TP for the ESIR engineering school. It will presents students the basics understanding of HL7 ADT messages.
+This project contains the ESI TP for the ESIR engineering school. It will presents students the basics understanding of HL7 ADT messages.
 
 ## Project structure
 
-This project is eventually composed by 3 projects:
+This project is composed by 3 projects:
 
 * esrh-tp-hL7: this one, describing the project and serving as a direct entry point to launch the program;
 * [esrh-hl7-back-end](https://gitlab.com/esrh-tp-hl7/esrh-hl7-back-end): this is the project hosting the back-end of the web application;
@@ -12,7 +12,7 @@ This project is eventually composed by 3 projects:
 
 ## Documentation for students
 
-This project is part of the ESRH module for the ESIR engineering school in Rennes (France). You can find two main documentations:
+This project is part of the ESI module for the ESIR engineering school in Rennes (France). You can find two main documentations:
 
 1. [the instructions for the practical work](./doc/ESRH_TP_fr.md) :fr:;
 2. [a very simplifed guide for the HL7 standard](./doc/HL7_guide_fr.md) and especially the ADT part :fr:.

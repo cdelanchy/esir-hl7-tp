@@ -1,6 +1,6 @@
-# TP ESRH
+# TP ESI
 
-Ce document décrit le déroulement du TP d'ESRH. Vous y trouverez les objectifs du TP, les consignes pour le compte-rendu, comment avoir un template de message HL7 à compléter et comment soumettre votre travail.
+Ce document décrit le déroulement du TP d'ESI sur HL7v2. Vous y trouverez les objectifs du TP, les consignes pour le compte-rendu et comment soumettre votre travail.
 
 ## Objectifs du TP
 
@@ -12,31 +12,37 @@ Les objectifs de ce TP sont les suivants :
 
 Les étudiants doivent avoir compris à la sortie du TP les notions suivantes :
 
-* l'inscription du système de messages HL7 au sein d'un système d'information hospitalier ;
 * les bases de l'interopérabilité ;
 * le parcours patient simplifié dans un établissement de soin.
+* l'inscription du système de messages HL7 au sein d'un système d'information hospitalier ;
 
 ## Déroulement du TP
 
 Ce TP peut s'exécuter en binôme ou seul en fonction des contraintes de la salle informatique.
 
-Après avoir pris connaissance du contenu du TP (5'), les étudiants doivent regarder le mini-guide HL7 fourni (10') et ensuite réaliser les trois objectifs du TP en forgeant leurs propres messages HL7.
+Après avoir pris connaissance du contenu du TP (5'), les étudiants doivent doivent se documenter sur le format HL7v2.X et la partie ADT (Admission Discharge Transfert) de ce standard (30') et ensuite réaliser les trois objectifs du TP en forgeant leurs propres messages HL7.
 
-Les étudiants doivent renvoyer un compte-rendu à une date fixée avec l'enseignant. Son contenu est décrit ci-après.
+Les étudiants **doivent renvoyer un compte-rendu à une date fixée avec l'enseignant**. Son contenu est décrit ci-après.
 
 ## Compte-rendu de TP
 
 Le compte-rendu est à envoyer à l'adresse mail donnée par l'enseignant, jusqu'à la date convenue et indiquée lors du TP, jusqu'à minuit au plus tard. L'enseignant se réserve le droit de mettre des pénalités en cas de retard.
 
-Le contenu du compte-rendu doit correspondre à la description ci-dessous. 
+Le contenu du compte-rendu doit correspondre à la description ci-dessous.
 
-* Copie du message HL7 et capture d'écran du résultat sur el tableau des patients pour chaque événement (Admission, Transfert et Sortie).
+* **Copie du message HL7** et **capture d'écran du résultat sur le tableau** des patients pour chaque événement (Admission, Transfert et Sortie).
 * Réponses aux questions :
-  * De quoi est constitué l'IPP dans ce TP ?
+  * Quel est le profil d'intégration IHE correspond à l'admistration des patients ?
+  * A quel domaine d'IHE appartient-il ?
+  * Donnez l'identifiant de la transaction IHE réalisée dans ce TP, au sein du domaine et profil d'intégration susmentionnés.
+  * Quel acteur avez-vous simulé au sein de cette transaction ?
+  * Ce profil d'intégration a-t-il été profilé en France ? Le cas échéant, quel organisme l'a profilé et comment se nomme la version profilée ?
+  * De quoi est constitué l'Identifiant Patient (IPP) dans ce TP ?
   * A quoi sert-il ?
   * Quel devrait être l'IPP depuis le 1er janvier 2021 en France ?
-  * D'après vous, et en vous documentant, existe-t-il un événément HL7 pouvant arriver avant l'admission ?
+  * D'après vous, et en vous documentant, existe-t-il un événément HL7v2 pouvant arriver avant l'admission ?
     * Si oui, donner son code type d'événement et un exemple de message.
+    * Préciser les sources vous ayant permis de répondre à la question.
   * BONUS : comment remettre le SIH du TP en ligne à 0 (i.e. vider la liste des patients) ? Donner la théorie et si possible la mise en pratique, captures d'écran à l'appui.
 
 ## Utiliser le template HL7 fourni
@@ -46,10 +52,10 @@ Ce dernier contient l'ensemble des segments utilisés dans les messages HL7 d'ad
 
 Vous pouvez récupérer ce template, soit en le téléchargeant depuis la page web du projet, soit en téléchargeant/clonant l'ensemble du projet.
 
-Pour créer votre message HL7, vous devez :
+Pour créer votre message HL7, une des possibilités est de :
 
 * créer une copie de ce template ;
-* garder les segments d'intérêts ;
+* garder les segments d'intérêts en fonction de la documentation du standard ;
 * ajouter les informations nécessaire à votre type de message dans les champs correspondants ;
 * enregistrer cette copie avec une extension de fichier .HL7 ;
 
@@ -72,7 +78,7 @@ Pour réaliser une admission, vous avez au minimum besoin des segments et élém
 * PV1 : Patient Visit
   * Localisation du patient
 
-Compléter les champs vides des segments avec les informations requises en suivant la mini-documentation sur HL7 jointe au TP.
+Compléter les champs vides des segments avec les informations requises en suivant la mini-documentation sur HL7 jointe au TP et les documentations associées au standard et au profil IHE.
 
 ## Réaliser un transfert
 
@@ -115,6 +121,8 @@ Pour la sortie, les segments minimum sont les suivants :
 Une fois votre message forgé, rendez-vous sur la page [http://esrh-tp.clotaire-delanchy.fr/patients/new](http://esrh-tp.clotaire-delanchy.fr/patients/new) et suivez les instructions.
 
 Un message de succès ou d'erreur vous indiquera si votre message a été pris en compte ou non.
+
+Attention : votre message doit forcément avoir l'extension `.HL7`.
 
 ## Visualiser le résultat
 
