@@ -118,7 +118,7 @@ Pour la sortie, les segments minimum sont les suivants :
 
 ## Soumettre son message
 
-Une fois votre message forgé, rendez-vous sur la page [http://esrh-tp.clotaire-delanchy.fr/patients/new](http://esrh-tp.clotaire-delanchy.fr/patients/new) et suivez les instructions.
+Une fois votre message forgé, rendez-vous sur la page [http://esrh-tp.clotaire-delanchy.fr/](http://esrh-tp.clotaire-delanchy.fr/), cliquez sur "Add patient" et suivez les instructions.
 
 Un message de succès ou d'erreur vous indiquera si votre message a été pris en compte ou non.
 
