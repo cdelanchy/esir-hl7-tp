@@ -1,50 +1,49 @@
-version: "3"
-  services:
-    mongo:
-      image: mongo:3.4
-      container_name: mongo
-      restart: unless-stopped
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "7"
+services:
+  mongo:
+    image: mongo:3.4
+    container_name: mongo
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"
 
-    esrh-front-end:
-      image: registry.gitlab.com/esrh-tp-hl7/esrh-hl7-front-end:1.0.0
-      container_name: esrh-front-end
-      restart: unless-stopped
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "7"
+  esrh-front-end:
+    image: registry.gitlab.com/esrh-tp-hl7/esrh-hl7-front-end:1.0.0
+    container_name: esrh-front-end
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"
 
-    esrh-back-end:
-      image: registry.gitlab.com/esrh-tp-hl7/esrh-hl7-back-end:1.1.0
-      container_name: esrh-back-end
-      restart: unless-stopped
-      depends_on:
-        - mongo
-      environment:
-        MONGO: 'mongodb://mongo:27017/esrh'
-        RESET_PASSWD: 'yolo'
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "7"
+  esrh-back-end:
+    image: registry.gitlab.com/esrh-tp-hl7/esrh-hl7-back-end:1.1.0
+    container_name: esrh-back-end
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      MONGO: 'mongodb://mongo:27017/esrh'
+      RESET_PASSWD: 'yolo'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"
 
-    proxy:
-      image: nginx:latest
-      container_name: proxy
-      restart: unless-stopped
-      volumes:
-        - ./esrh.nginx.conf:/etc/nginx/nginx.conf:ro
-      ports:
-        - 80:80
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "7"
+  proxy:
+    image: nginx:latest
+    container_name: proxy
+    restart: unless-stopped
+    volumes:
+      - ./esir-hl7.nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:80
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "7"

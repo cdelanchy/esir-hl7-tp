@@ -12,9 +12,9 @@ Les objectifs de ce TP sont les suivants :
 
 Les étudiants doivent avoir compris à la sortie du TP les notions suivantes :
 
+* l'inscription du système de messages HL7 au sein d'un système d'information hospitalier ;
 * les bases de l'interopérabilité ;
 * le parcours patient simplifié dans un établissement de soin.
-* l'inscription du système de messages HL7 au sein d'un système d'information hospitalier ;
 
 ## Déroulement du TP
 
@@ -52,10 +52,10 @@ Ce dernier contient l'ensemble des segments utilisés dans les messages HL7 d'ad
 
 Vous pouvez récupérer ce template, soit en le téléchargeant depuis la page web du projet, soit en téléchargeant/clonant l'ensemble du projet.
 
-Pour créer votre message HL7, une des possibilités est de :
+Pour créer votre message HL7, vous devez :
 
 * créer une copie de ce template ;
-* garder les segments d'intérêts en fonction de la documentation du standard ;
+* garder les segments d'intérêts ;
 * ajouter les informations nécessaire à votre type de message dans les champs correspondants ;
 * enregistrer cette copie avec une extension de fichier .HL7 ;
 
