@@ -130,7 +130,7 @@ Pour la sortie, les segments minimum sont les suivants :
 
 ## Soumettre son message
 
-Une fois votre message forgé, rendez-vous sur la page [http://esrh-tp.clotaire-delanchy.fr/](http://esrh-tp.clotaire-delanchy.fr/), cliquez sur "Upload HL7" et suivez les instructions.
+Une fois votre message forgé, rendez-vous sur la page [https://esir-tp.clotaire-delanchy.fr/](https://esir-tp.clotaire-delanchy.fr/), cliquez sur "Upload HL7" et suivez les instructions.
 
 Un message de succès ou d'erreur vous indiquera si votre message a été pris en compte ou non.
 
@@ -138,7 +138,7 @@ Attention : votre message doit forcément avoir l'extension `.HL7`.
 
 ## Visualiser le résultat
 
-Pour voir le résultat de votre message (admission, transfert ou sortie), vous pouvez vous rendre sur [http://esrh-tp.clotaire-delanchy.fr/](http://esrh-tp.clotaire-delanchy.fr/).
+Pour voir le résultat de votre message (admission, transfert ou sortie), vous pouvez vous rendre sur [https://esir-tp.clotaire-delanchy.fr/](https://esir-tp.clotaire-delanchy.fr/).
 
 Un tableau vous représente l'état du SIH avec les patients enregistrés et leurs statuts ainsi que des informations sur leur localisation. Si vous cliquez sur le bouton "Historique" d'un patient, vous verrez apparaître son historique.
 
