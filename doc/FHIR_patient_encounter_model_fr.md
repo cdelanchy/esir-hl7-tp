@@ -1,19 +1,24 @@
-# Modèle de données FHIR pour le TP HL7 v2
+# Modèle de données FHIR pour le TP HL7v2
 
 ## 1. Objectif
 
-Le but de cette version FHIR du TP est de remplacer la logique ad hoc de stockage du patient dans une base Mongo par des ressources standardisées conformes à FHIR R4.
+Le but de cette version FHIR du TP est de remplacer la logique *ad hoc* de stockage du patient dans une base Mongo par des ressources standardisées conformes à FHIR R4.
 
-Pour une application pédagogique simplifiée, nous retenons uniquement deux ressources principales :
+Le front-end lit un message HL7 v2 ADT, le transforme en un `Bundle` FHIR de type `transaction` et l'envoie au serveur FHIR. Le tableau des patients est ensuite reconstruit uniquement à partir des ressources présentes sur le serveur.
+
+Trois ressources sont utilisées :
 
 - `Patient` pour les données administratives du patient ;
-- `Encounter` pour les mouvements d’admission, transfert et sortie.
+- `Encounter` pour le séjour (la venue) **et** pour chacun de ses mouvements ;
+- `Location` pour les emplacements (service, chambre, lit).
 
-Le but est de représenter de manière simple et explicite les événements HL7 ADT suivants :
+Les événements HL7 ADT pris en charge sont :
 
-- `ADT^A01` : admission
-- `ADT^A02` : transfert
-- `ADT^A03` : sortie / discharge
+- `ADT^A01` : admission ;
+- `ADT^A02` : transfert/mutation ;
+- `ADT^A03` : sortie.
+
+Tout autre type de message est rejeté (`Message type is unknown or undefined`).
 
 ---
 
@@ -21,213 +26,338 @@ Le but est de représenter de manière simple et explicite les événements HL7 
 
 ### 2.1. Ressource `Patient`
 
-La ressource `Patient` contient les informations démographiques et d’identité du patient.
+La ressource `Patient` contient les informations démographiques et l'identité du patient (IPP, noms, sexe, date de naissance).
 
-### 2.2. Ressource `Encounter`
+### 2.2. Ressources `Encounter` : séjour et mouvements
 
-La ressource `Encounter` représente un séjour ou un mouvement hospitalier. Elle est utilisée pour l’admission, le transfert et la sortie.
+Le modèle distingue deux niveaux d'`Encounter` :
 
-Dans le cadre du TP, on ne modélise pas toute la complexité d’un séjour hospitalier complet. On garde uniquement les informations utiles à l’interface pédagogique :
+| Niveau | Identifié par | Rôle |
+|---|---|---|
+| **Séjour** (venue) | PV1-19 (numéro de venue, type `VN`) | Encounter parent : statut global et dates d'admission / de sortie du séjour. Il n'a pas de `partOf`. |
+| **Mouvement** | ZBE-1 (identifiant du mouvement) | Un Encounter par message A01 / A02 / A03, rattaché au séjour par `partOf`. Il porte la date du mouvement et la localisation (service / chambre / lit). |
 
-- patient concerné ;
-- service ;
-- chambre ;
-- lit ;
-- date de début ;
-- date de fin ;
-- statut courant ;
-- historique des mouvements.
+```text
+Patient
+  ▲ subject
+  │
+Encounter « séjour » (PV1-19 = VN3607)          status, period.start, period.end
+  ▲ partOf
+  ├── Encounter « mouvement » (ZBE-1 = MOV7090)  A01 : admission    → Location 8780 / 211 / 231-2
+  ├── Encounter « mouvement » (ZBE-1 = MOV7091)  A02 : transfert    → Location 8786 / 270 / 270-1
+  └── Encounter « mouvement » (ZBE-1 = MOV7092)  A03 : sortie       → Location 8786 / 270 / 270-1
+```
+
+L'historique des mouvements est porté par la liste des Encounters « mouvement » d'un séjour.
+
+### 2.3. Ressource `Location`
+
+La ressource `Location` représente l'emplacement du patient. Chaque message crée une hiérarchie de trois `Location` reliées par `partOf` :
+
+```text
+Location service (physicalType = wa)
+  ▲ partOf
+Location chambre (physicalType = ro)
+  ▲ partOf
+Location lit (physicalType = bd)
+```
+
+Ces `Location` sont référencées par l'Encounter « mouvement » (`Encounter.location[]`).
 
 ---
 
-## 3. Modèle `Patient`
+## 3. Extraction des données du message HL7
 
-### 3.1. Champs retenus
+| Donnée | Segment / champ HL7 v2 | Remarque |
+|---|---|---|
+| Type de message | MSH-9 | normalisé en `ADT^A01`, `ADT^A02` ou `ADT^A03` |
+| Date de l'événement | EVN-6, à défaut EVN-2 | **seule** date utilisée pour l'admission, le mouvement et la sortie ; obligatoire |
+| IPP | PID-3 | répétition dont le type (PID-3.5) vaut `PI`, sinon la première répétition |
+| Système de l'IPP | PID-3.4 (autorité d'affectation, type HD) | voir § 3.1 ; `urn:esir` par défaut |
+| Noms | PID-5 (répété) | PID-5.1 nom, PID-5.2 prénom, PID-5.3 second prénom, PID-5.7 type de nom |
+| Date de naissance | PID-7 | |
+| Sexe | PID-8 | |
+| Classe du patient | PV1-2 | |
+| Service | PV1-3.1, à défaut PV1-10 | |
+| Chambre | PV1-3.2 | |
+| Lit | PV1-3.3 | |
+| Numéro de séjour (venue) | PV1-19 (type CX) | valeur + système issu de PV1-19.4 |
+| Identifiant du mouvement | ZBE-1 (type EI) | valeur + système issu de ZBE-1.2 à ZBE-1.4 |
 
-| Champ FHIR | Type | Description | Source HL7 v2 |
-|---|---|---|---|
-| `id` | string | identifiant technique de la ressource | généré par le serveur FHIR |
-| `identifier` | array | identifiants du patient, notamment l’IPP | PID-3 |
-| `name` | array | nom et prénom | PID-5, PID-4 |
-| `gender` | code | sexe | PID-8 |
-| `birthDate` | date | date de naissance | PID-7 |
-| `active` | boolean | patient actif | calculé par le système |
-| `managingOrganization` | Reference | structure de rattachement | à définir selon le cas |
+Les messages sans MSH-9, sans PID-3 ou sans date d'événement (EVN-6 / EVN-2) sont rejetés.
 
-### 3.2. Mapping conceptuel
+Pour des raisons de simplification, les champs PV1-44 / PV1-45 (dates d'admission et de sortie) ne sont **pas** utilisés : toutes les dates proviennent du segment EVN.
 
-| Donnée métier | FHIR |
+### 3.1. Système des identifiants
+
+Le système (`identifier.system`) des identifiants Patient, séjour et mouvement est calculé à partir de l'autorité d'affectation HL7, à défaut : `urn:esir` (Patient), `urn:esir:encounter-visit` (séjour), `urn:esir:encounter-movement` (mouvement).
+
+Exemple : `GZL_INTEROP&2.16.840.1.113883.2.8.3.7&ISO` → `urn:oid:2.16.840.1.113883.2.8.3.7`.
+
+### 3.2. Dates
+
+Les dates HL7 sont converties au format FHIR :
+
+- `yyyyMMdd` → date (`2002-01-29`) ;
+- `yyyyMMddHHmmss` → dateTime ISO avec le fuseau horaire local (`2026-11-09T21:53:48+01:00`).
+
+---
+
+## 4. Modèle `Patient`
+
+### 4.1. Champs produits
+
+| Champ FHIR | Valeur | Source HL7 v2 |
+|---|---|---|
+| `id` | identifiant technique | attribué par le serveur FHIR |
+| `identifier[0].use` | `official` | constante |
+| `identifier[0].type` | `v2-0203#PI` (*Patient internal identifier*) | constante |
+| `identifier[0].system` | système de l'IPP | PID-3.4 |
+| `identifier[0].value` | IPP | PID-3.1 |
+| `active` | `true` | constante |
+| `name[]` | un élément par répétition de PID-5 | PID-5 |
+| `gender` | `male` / `female` / `other` / `unknown` | PID-8 (`M` / `F` / `O` / autre) |
+| `birthDate` | date de naissance | PID-7 |
+
+### 4.2. Mapping des noms (PID-5)
+
+| HL7 v2 | FHIR |
 |---|---|
-| Ipp | `Patient.identifier` |
-| Nom | `Patient.name[0].family` |
-| Prénom | `Patient.name[0].given[]` |
-| Sexe | `Patient.gender` |
-| Date de naissance | `Patient.birthDate` |
+| PID-5.1 | `name[].family` |
+| PID-5.2, PID-5.3 | `name[].given[]` (prénom puis second prénom) |
+| PID-5.7 = `L` (nom de naissance / légal) | `name[].use = official` |
+| PID-5.7 = `D` (nom d'usage) | `name[].use = usual` |
 
-### 3.3. Exemple JSON de `Patient`
+Si PID-5 est vide, un nom par défaut est produit (`family = "Inconnu"`, `given = ["Patient"]`).
+
+### 4.3. Exemple JSON de `Patient`
 
 ```json
 {
   "resourceType": "Patient",
-  "id": "patient-123",
   "identifier": [
     {
-      "system": "urn:ipp",
-      "value": "1234567890"
+      "use": "official",
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PI",
+            "display": "Patient internal identifier"
+          }
+        ]
+      },
+      "system": "urn:oid:1.3.6.1.4.1.12559.11.36.3",
+      "value": "DDS-55441"
     }
   ],
   "active": true,
   "name": [
     {
-      "family": "Dupont",
-      "given": ["Jean", "Pierre"]
+      "use": "official",
+      "family": "BOUVIER",
+      "given": ["FIRMIN"]
     }
   ],
   "gender": "male",
-  "birthDate": "1982-05-14"
+  "birthDate": "2002-01-29"
 }
 ```
 
-### 3.4. Règles métier simplifiées
-
-- un identifiant IPP doit être unique ;
-- un patient ne peut pas être recréé s’il existe déjà ;
-- si le message `A01` arrive pour un patient déjà admis, l’application doit signaler une anomalie métier.
-
 ---
 
-## 4. Modèle `Encounter`
+## 5. Modèle `Encounter`
 
-### 4.1. Champs retenus
+### 5.1. Champs communs (séjour et mouvement)
 
-| Champ FHIR | Type | Description | Source HL7 v2 |
-|---|---|---|---|
-| `id` | string | identifiant technique | généré par le serveur FHIR |
-| `status` | code | statut du séjour (`planned`, `in-progress`, `finished`, `cancelled`) | dérivé du type ADT |
-| `class` | Coding | type d’encounter (`inpatient`, `ambulatory`) | PV1-2 |
-| `subject` | Reference | référence vers le patient | PID |
-| `participant` | array | acteurs / personnel | optionnel pour le TP |
-| `period` | object | date de début / fin | PV1-44 / PV1-45 / date événement |
-| `location` | array | chambre / lit / service | PV1-3, PV1-6, PV1-10 |
-| `serviceType` | CodeableConcept | service de soins | PV1-10 |
-| `statusHistory` | array | historique des statuts | utile pour les transferts |
-| `reasonCode` | array | motif du mouvement | optionnel |
+| Champ FHIR | Valeur | Source HL7 v2 |
+|---|---|---|
+| `id` | identifiant technique | attribué par le serveur FHIR |
+| `status` | `finished` pour un A03, sinon `in-progress` | type de message |
+| `class` | code `v3-ActCode` | PV1-2 (voir ci-dessous) |
+| `subject` | référence vers le `Patient` du Bundle | PID-3 |
 
-### 4.2. Mapping principal
+Mapping de PV1-2 vers `Encounter.class` (système `http://terminology.hl7.org/CodeSystem/v3-ActCode`) :
 
-| Donnée métier | FHIR |
-|---|---|
-| service | `Encounter.serviceType` |
-| chambre | `Encounter.location[0].physicalType` ou zone de localisation |
-| lit | `Encounter.location[0].status` / libellé de localisation |
-| date admission | `Encounter.period.start` |
-| date sortie | `Encounter.period.end` |
-| patient | `Encounter.subject` |
-| transfert | nouveau `Encounter` ou mise à jour du déplacement |
+| PV1-2 | `class.code` | `class.display` |
+|---|---|---|
+| `O` | `AMB` | ambulatory |
+| `E` | `EMER` | emergency |
+| `I`, `R` ou autre | `IMP` | inpatient encounter |
 
-### 4.3. Exemple JSON de `Encounter`
+### 5.2. Encounter « séjour »
+
+| Champ FHIR | Valeur | Source |
+|---|---|---|
+| `identifier[0].type` | `fr-core-cs-identifier-type#VN` (*Visit Number*) | constante |
+| `identifier[0].system` / `value` | numéro de séjour | PV1-19 |
+| `period.start` | date d'admission | date d'événement de l'A01 (reprise du serveur pour A02 / A03) |
+| `period.end` | date de sortie | date d'événement de l'A03 |
+
+Le séjour n'a pas de `partOf`. Comme il est remplacé intégralement à chaque message (PUT conditionnel, § 7), les messages A02 et A03 relisent sur le serveur la date d'admission du séjour pour la conserver dans `period.start`.
+
+### 5.3. Encounter « mouvement »
+
+| Champ FHIR | Valeur | Source |
+|---|---|---|
+| `identifier[0].type.text` | `Identifiant du mouvement (ZBE-1)` | constante |
+| `identifier[0].system` / `value` | identifiant du mouvement | ZBE-1 |
+| `partOf` | référence vers l'Encounter « séjour » | PV1-19 |
+| `period.start` | date du mouvement | EVN-6 / EVN-2 |
+| `period.end` | date du mouvement, uniquement pour un A03 | EVN-6 / EVN-2 |
+| `location[]` | une entrée par niveau (service, chambre, lit) | PV1-3 |
+| `location[].location` | référence vers la `Location` + `display` = nom | PV1-3 |
+| `location[].status` | `completed` pour un A03, sinon `active` | type de message |
+| `location[].physicalType` | `wa` / `ro` / `bd` | niveau de la localisation |
+
+### 5.4. Exemple JSON : séjour et mouvement (A01)
 
 ```json
 {
   "resourceType": "Encounter",
-  "id": "encounter-456",
+  "identifier": [
+    {
+      "use": "official",
+      "type": {
+        "coding": [
+          {
+            "system": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-identifier-type",
+            "code": "VN",
+            "display": "Visit Number"
+          }
+        ]
+      },
+      "system": "urn:oid:2.16.840.1.113883.2.8.3.7",
+      "value": "VN3607"
+    }
+  ],
   "status": "in-progress",
   "class": {
     "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
     "code": "IMP",
-    "display": "inpatient"
+    "display": "inpatient encounter"
   },
-  "subject": {
-    "reference": "Patient/patient-123"
+  "subject": { "reference": "urn:uuid:<patient>" },
+  "period": { "start": "2026-11-09T21:53:48+01:00" }
+}
+```
+
+```json
+{
+  "resourceType": "Encounter",
+  "identifier": [
+    {
+      "use": "official",
+      "type": { "text": "Identifiant du mouvement (ZBE-1)" },
+      "system": "urn:oid:2.16.840.1.113883.2.8.3.7",
+      "value": "MOV7090"
+    }
+  ],
+  "status": "in-progress",
+  "class": {
+    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+    "code": "IMP",
+    "display": "inpatient encounter"
   },
-  "serviceType": {
-    "coding": [
-      {
-        "system": "http://example.org/service",
-        "code": "CARD",
-        "display": "Cardiologie"
-      }
-    ],
-    "text": "Cardiologie"
-  },
-  "period": {
-    "start": "2026-11-03T09:15:00+01:00"
-  },
+  "subject": { "reference": "urn:uuid:<patient>" },
+  "partOf": { "reference": "urn:uuid:<sejour>" },
+  "period": { "start": "2026-11-09T21:53:48+01:00" },
   "location": [
     {
-      "location": {
-        "reference": "Location/room-101"
-      },
-      "status": "active"
+      "location": { "reference": "urn:uuid:<service>", "display": "8780" },
+      "status": "active",
+      "physicalType": {
+        "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/location-physical-type", "code": "wa", "display": "Ward" }]
+      }
+    },
+    {
+      "location": { "reference": "urn:uuid:<chambre>", "display": "211" },
+      "status": "active",
+      "physicalType": {
+        "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/location-physical-type", "code": "ro", "display": "Room" }]
+      }
+    },
+    {
+      "location": { "reference": "urn:uuid:<lit>", "display": "231-2" },
+      "status": "active",
+      "physicalType": {
+        "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/location-physical-type", "code": "bd", "display": "Bed" }]
+      }
     }
   ]
 }
 ```
 
----
-
-## 5. Règles de mapping HL7 ADT -> FHIR
-
-### 5.1. `ADT^A01` : admission
-
-- création d’un `Patient` si absent ;
-- création d’un `Encounter` avec `status = in-progress` ;
-- `period.start = dateEvenement` ;
-- `serviceType` = service ;
-- `location` = chambre / lit ;
-
-### 5.2. `ADT^A02` : transfert
-
-- le patient existe déjà ;
-- l’`Encounter` actif est mis à jour ;
-- si le système gère un historique, on ouvre un nouvel `Encounter` ou on enrichit `statusHistory` ;
-- `location` est mise à jour avec la nouvelle chambre / lit ;
-- la nouvelle période de séjour reste cohérente ;
-
-### 5.3. `ADT^A03` : sortie
-
-- le patient est déjà admis ;
-- on met à jour l’`Encounter` actif avec `status = finished` ;
-- `period.end = dateEvenement` ;
-- la ressource `Patient` reste présente, mais le séjour est clôturé.
+Pour l'A03 correspondant, le séjour passe à `status = finished` avec `period.end` renseignée, et le mouvement MOV7092 a `status = finished`, `period.start = period.end = date de sortie` et ses `location[].status = completed`.
 
 ---
 
-## 6. Modèle simplifié d’historique
+## 6. Modèle `Location`
 
-Pour la vue “tableau des patients” du front, on peut reconstruire l’historique à partir des `Encounter`.
+### 6.1. Champs produits
 
-### 6.1. Vue métier souhaitée
+| Champ FHIR | Service | Chambre | Lit |
+|---|---|---|---|
+| `name` | PV1-3.1 (à défaut PV1-10) | PV1-3.2 | PV1-3.3 |
+| `status` | `active` | `active` | `active` |
+| `physicalType` (`location-physical-type`) | `wa` / Ward | `ro` / Room | `bd` / Bed |
+| `type` (`urn:esir:location-type`) | `AILE` / Aile | `CHAMB` / Chambre | `LIT` / Lit |
+| `partOf` | — | service | chambre (à défaut service) |
 
-Le front affiche :
+Un niveau absent du message (par exemple pas de lit) n'est pas créé.
 
-- nom du patient ;
-- prénom ;
-- sexe ;
-- IPP ;
-- date de naissance ;
-- date d’admission ;
-- service ;
-- chambre ;
-- lit ;
-- date de sortie ;
-- historique des mouvements.
+### 6.2. Exemple JSON de `Location` (lit)
 
-### 6.2. Calcul à partir des `Encounter`
-
-- `dateAdmission` = première `Encounter.period.start` active ou la date de l’`A01` ;
-- `service` = dernier `Encounter.serviceType` actif ;
-- `room` / `bed` = dernière localisation connue ;
-- `checkoutDate` = date de fin du dernier encounter terminé ;
-- `history` = liste ordonnée des mouvements à partir des événements d’`Encounter`.
+```json
+{
+  "resourceType": "Location",
+  "status": "active",
+  "name": "231-2",
+  "physicalType": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/location-physical-type",
+        "code": "bd",
+        "display": "Bed"
+      }
+    ]
+  },
+  "type": [
+    {
+      "coding": [
+        {
+          "system": "urn:esir:location-type",
+          "code": "LIT",
+          "display": "Lit"
+        }
+      ]
+    }
+  ],
+  "partOf": { "reference": "urn:uuid:<chambre>" }
+}
+```
 
 ---
 
 ## 7. Bundle de transaction FHIR
 
-Pour l’envoi au serveur FHIR, on peut utiliser un `Bundle` de type `transaction`.
+Chaque message HL7 produit **un** `Bundle` de type `transaction`, envoyé par `POST` à la racine du serveur FHIR (`/fhir/`). Il contient, dans cet ordre :
 
-### 7.1. Exemple de Bundle
+| Entrée | Requête | Effet |
+|---|---|---|
+| `Patient` | `PUT Patient?identifier=<system>\|<IPP>` | création ou mise à jour du patient identifié par son IPP |
+| Encounter « séjour » | `PUT Encounter?identifier=<system>\|<PV1-19>` | création (A01) ou remplacement (A02 / A03) du séjour |
+| Encounter « mouvement » | `PUT Encounter?identifier=<system>\|<ZBE-1>` | création du mouvement (ou remplacement s'il est rejoué) |
+| `Location` service / chambre / lit | `POST Location` | création des localisations |
+
+Points importants :
+
+- chaque entrée possède un `fullUrl` de la forme `urn:uuid:<uuid>` ; les références internes (`subject`, `partOf`, `location`) utilisent ces `fullUrl` et sont réécrites par le serveur avec les identifiants définitifs ;
+- les `PUT` conditionnels sur l'identifiant permettent à un A02 / A03 de **mettre à jour le même séjour** au lieu d'en créer un nouveau ;
+- si un Encounter n'a pas d'identifiant (PV1-19 ou ZBE-1 absent), il est créé par `POST` ;
+- les `Location` sont recréées à chaque message (pas de dédoublonnage).
+
+### 7.1. Exemple de Bundle (A01, abrégé)
 
 ```json
 {
@@ -235,92 +365,120 @@ Pour l’envoi au serveur FHIR, on peut utiliser un `Bundle` de type `transactio
   "type": "transaction",
   "entry": [
     {
-      "resource": {
-        "resourceType": "Patient",
-        "identifier": [
-          {
-            "system": "urn:ipp",
-            "value": "1234567890"
-          }
-        ],
-        "name": [
-          {
-            "family": "Dupont",
-            "given": ["Jean", "Pierre"]
-          }
-        ],
-        "gender": "male",
-        "birthDate": "1982-05-14"
-      },
+      "fullUrl": "urn:uuid:<patient>",
+      "resource": { "resourceType": "Patient", "...": "voir § 4.3" },
       "request": {
         "method": "PUT",
-        "url": "Patient?identifier=urn:ipp|1234567890"
+        "url": "Patient?identifier=urn:oid:1.3.6.1.4.1.12559.11.36.3|DDS-55441"
       }
     },
     {
-      "resource": {
-        "resourceType": "Encounter",
-        "status": "in-progress",
-        "class": {
-          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-          "code": "IMP",
-          "display": "inpatient"
-        },
-        "subject": {
-          "reference": "Patient/1234567890"
-        },
-        "serviceType": {
-          "text": "Cardiologie"
-        },
-        "period": {
-          "start": "2026-11-03T09:15:00+01:00"
-        }
-      },
+      "fullUrl": "urn:uuid:<sejour>",
+      "resource": { "resourceType": "Encounter", "...": "séjour, voir § 5.4" },
       "request": {
-        "method": "POST",
-        "url": "Encounter"
+        "method": "PUT",
+        "url": "Encounter?identifier=urn:oid:2.16.840.1.113883.2.8.3.7|VN3607"
       }
+    },
+    {
+      "fullUrl": "urn:uuid:<mouvement>",
+      "resource": { "resourceType": "Encounter", "...": "mouvement, voir § 5.4" },
+      "request": {
+        "method": "PUT",
+        "url": "Encounter?identifier=urn:oid:2.16.840.1.113883.2.8.3.7|MOV7090"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:<service>",
+      "resource": { "resourceType": "Location", "name": "8780", "...": "voir § 6" },
+      "request": { "method": "POST", "url": "Location" }
+    },
+    {
+      "fullUrl": "urn:uuid:<chambre>",
+      "resource": { "resourceType": "Location", "name": "211", "...": "voir § 6" },
+      "request": { "method": "POST", "url": "Location" }
+    },
+    {
+      "fullUrl": "urn:uuid:<lit>",
+      "resource": { "resourceType": "Location", "name": "231-2", "...": "voir § 6" },
+      "request": { "method": "POST", "url": "Location" }
     }
   ]
 }
 ```
 
-### 7.2. Intérêt pédagogique
+---
 
-Ce format est intéressant car il montre clairement au plus tôt :
+## 8. Règles de mapping et de contrôle HL7 ADT -> FHIR
 
-- le front produit des ressources FHIR structurées ;
-- le serveur reçoit des ressources, pas des objets métiers improvisés ;
-- la validation se fait selon le standard.
+Avant la transformation, le front interroge le serveur FHIR :
+
+1. recherche du `Patient` par `identifier=<system>|<IPP>` ;
+2. pour A02 / A03 : recherche de l'Encounter « séjour » par `identifier=<system>|<PV1-19>` ;
+3. recherche du dernier mouvement du séjour (`part-of=Encounter/<id>`, `_sort=-date`, `_count=1`).
+
+Ces informations servent aux contrôles ci-dessous. En cas d'erreur, aucun Bundle n'est envoyé.
+
+### 8.1. `ADT^A01` : admission
+
+- refusé si un `Patient` avec cet IPP existe déjà sur le serveur (`Patient already exists!`) ;
+- création du `Patient` ;
+- création du séjour : `status = in-progress`, `period.start = date d'événement` ;
+- création du mouvement d'admission : `status = in-progress`, `period.start = date d'événement`, `partOf` = séjour, localisation issue de PV1-3 ;
+- création des `Location` service / chambre / lit.
+
+### 8.2. `ADT^A02` : transfert
+
+- refusé si le patient n'existe pas (`Patient has not been admitted yet.`) ;
+- refusé si le séjour PV1-19 n'existe pas sur le serveur ;
+- refusé si le séjour est déjà terminé (`Patient already discharged!`) ;
+- refusé si la date d'événement est antérieure à la date du dernier mouvement (ou, à défaut, à la date d'admission) ;
+- le séjour est remplacé en conservant sa date d'admission, `status = in-progress` ;
+- un nouveau mouvement (ZBE-1) est créé avec la nouvelle localisation et `period.start = date d'événement` ;
+- les mouvements précédents ne sont pas modifiés.
+
+### 8.3. `ADT^A03` : sortie
+
+- mêmes contrôles que pour l'A02 (patient, séjour existant et non terminé, date cohérente) ;
+- le séjour est remplacé avec `status = finished`, `period.start` = date d'admission conservée, `period.end = date d'événement` ;
+- un mouvement de sortie est créé avec `status = finished`, `period.start = period.end = date d'événement` et des `location[].status = completed` ;
+- la ressource `Patient` reste présente, seul le séjour est clôturé.
 
 ---
 
-## 8. Recommandation pour le TP
+## 9. Reconstruction du tableau des patients
 
-Pour éviter de trop complexifier le TP, on recommande de garder un périmètre strict :
+Le front recharge périodiquement (toutes les 15 s par défaut, variable `VITE_PATIENTS_REFRESH_INTERVAL_SECONDS`) **tous** les `Patient` et **tous** les `Encounter` du serveur, puis construit une ligne par patient.
 
-- 1 ressource `Patient` ;
-- 1 ressource `Encounter` par séjour / mouvement ;
-- uniquement 3 événements : admission, transfert, sortie ;
-- validation métier minimale réalisée côté interface ou côté service applicatif ;
-- stockage sur Aidbox via un `Bundle` transaction.
+### 9.1. Classement des Encounters
 
-Ce niveau de modélisation est suffisant pour :
+- un Encounter **sans** `partOf` (ou dont `partOf` pointe sur lui-même) est un **séjour**, rattaché au patient via `subject` ;
+- un Encounter **avec** `partOf` est un **mouvement** du séjour référencé ;
+- les Encounters sont triés du plus récent au plus ancien sur `period.start`, puis sur `meta.lastUpdated`.
 
-- montrer le principe de FHIR ;
-- rester compatible avec la logique métier actuelle ;
-- permettre un front autonome et pédagogique.
+### 9.2. Colonnes du tableau
 
----
+| Colonne | Calcul |
+|---|---|
+| Nom | `Patient.name` de `use = official` (sinon sans `use`, sinon le premier) → `family` |
+| Nom d'usage | `Patient.name` de `use = usual` → `family` |
+| Prénom | premier `given` du nom officiel, sinon du nom d'usage |
+| Sexe | `Patient.gender` |
+| Date de naissance | `Patient.birthDate` |
+| IPP | `Patient.identifier` de type `PI` (sinon le premier), affiché avec son `system` |
+| Date d'admission | `period.start` du séjour le plus récent |
+| Date de sortie | `period.end` du séjour le plus récent |
+| Service / chambre / lit | `location[].location.display` du dernier mouvement du séjour, selon `physicalType` (`wa` / `ro` / `bd`) |
+| Statut | `Sortie` si le séjour est `finished`, `Transfert` s'il a plus d'un mouvement, sinon `Admission` |
 
-## 9. Synthèse
+Les patients sont triés par activité la plus récente (date du dernier mouvement, à défaut date d'admission) ; les patients sans séjour apparaissent en dernier.
 
-Le modèle FHIR retenu pour ce TP est le suivant :
+### 9.3. Historique des mouvements
 
-- `Patient` pour l’identité du patient ;
-- `Encounter` pour le séjour et ses mouvements ;
-- mapping simple des messages HL7 ADT `A01/A02/A03` ;
-- `Bundle` transaction pour l’échange avec Aidbox ;
-- reconstruction du tableau front à partir des ressources FHIR.
+L'historique déplié sous chaque patient liste tous ses séjours (le plus récent d'abord) avec :
 
-C’est une base solide pour une prochaine version plus riche, tout en restant suffisamment simple pour être mise en œuvre rapidement et enseignée aux étudiants en autonomie.
+- le numéro de séjour (`identifier[0].value`), les dates de début et de fin ;
+- ses mouvements dans l'ordre chronologique, chacun avec sa date (`period.start`), son service / sa chambre / son lit et son type :
+  - `Sortie` si le mouvement est `finished` ;
+  - `Admission` pour le premier mouvement du séjour ;
+  - `Transfert / mutation` pour les autres.
