@@ -1,5 +1,11 @@
 # ESIR TP HL7 CHANGELOG
 
+## 3.0.0
+
+* add more detailed documentation
+* remove useless files
+* switch to a FHIR architecture
+
 ## 2.0.0
 
 * remove HL7 file examples

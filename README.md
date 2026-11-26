@@ -17,16 +17,6 @@ This project is part of the ESI module for the ESIR engineering school in Rennes
 1. [the instructions for the practical work](./doc/ESIR_TP_HL7_fr.md) :fr:;
 2. [a very simplifed guide for the HL7 standard](./doc/HL7_guide_fr.md) and especially the ADT part :fr:.
 
-## Documentation for developpers
-
-You can start the project using `docker-compose` and the compose file at the root of this project.
-
-    docker-compose up -d
-
-This will start the different containers needed for this project to run, and especially an nginx one listening on port 80.
-
-Then, you can access the project using your favorited browser at `http://localhost`.
-
 ## Contributions
 
 Contributions are welcome. Please, be sure to follow the [contributing guide](./CONTRIBUTING.md).
